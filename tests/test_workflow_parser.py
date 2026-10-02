@@ -181,6 +181,7 @@ def test_empty_braces_pass_through_unchanged():
 
 
 def test_duplicate_names_after_substitution_raise(monkeypatch):
+    """Expanded names must not collide with another step's output key."""
     monkeypatch.setenv("STEP_NAME", "fetch")
     path = _write_yaml({
         "steps": [
@@ -193,6 +194,7 @@ def test_duplicate_names_after_substitution_raise(monkeypatch):
 
 
 def test_empty_name_after_substitution_raises(monkeypatch):
+    """An environment variable cannot resolve to an empty step name."""
     monkeypatch.setenv("STEP_NAME", "")
     path = _write_yaml({
         "steps": [{"name": "${STEP_NAME}", "command": "download", "uri": "x"}]
@@ -203,6 +205,7 @@ def test_empty_name_after_substitution_raises(monkeypatch):
 
 @pytest.mark.parametrize("command", ["download", "invalid"])
 def test_command_is_validated_after_substitution(monkeypatch, command):
+    """Resolved commands must satisfy the same allowlist as literal commands."""
     monkeypatch.setenv("COMMAND", command)
     path = _write_yaml({
         "steps": [{"name": "fetch", "command": "${COMMAND}", "uri": "x"}]
@@ -215,6 +218,7 @@ def test_command_is_validated_after_substitution(monkeypatch, command):
 
 
 def test_on_error_is_validated_after_substitution(monkeypatch):
+    """A supported error policy can be supplied through an environment variable."""
     monkeypatch.setenv("ERROR_POLICY", "continue")
     path = _write_yaml({
         "steps": [{
