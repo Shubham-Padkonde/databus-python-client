@@ -9,11 +9,18 @@ from databusclient.api.download import _download_file
 
 
 @pytest.mark.parametrize(
-    "location",
-    ["/data.ttl", "../data.ttl", "data.ttl", "{base}/data.ttl", "//{host}/data.ttl"],
+    ("location", "expected_path"),
+    [
+        ("/data.ttl", "/data.ttl"),
+        ("../data.ttl", "/data.ttl"),
+        ("data.ttl", "/entry/data.ttl"),
+        ("{base}/data.ttl", "/data.ttl"),
+        ("//{host}/data.ttl", "/data.ttl"),
+    ],
 )
-def test_download_resolves_redirect_location(tmp_path, location):
+def test_download_resolves_redirect_location(tmp_path, location, expected_path):
     content = b"<urn:s> <urn:p> <urn:o> .\n"
+    requested_paths = []
 
     class Handler(BaseHTTPRequestHandler):
         def do_HEAD(self):
@@ -25,7 +32,7 @@ def test_download_resolves_redirect_location(tmp_path, location):
             self.end_headers()
 
         def do_GET(self):
-            assert self.path in ("/data.ttl", "/entry/data.ttl")
+            requested_paths.append(self.path)
             self.send_response(200)
             self.send_header("Content-Length", str(len(content)))
             self.end_headers()
@@ -46,4 +53,5 @@ def test_download_resolves_redirect_location(tmp_path, location):
             server.shutdown()
             thread.join()
 
+    assert requested_paths == [expected_path]
     assert (tmp_path / "file.ttl").read_bytes() == content
